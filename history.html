@@ -53,27 +53,22 @@
     const unitId = (params.get('id') || '').trim();
 
     // Link to the sheet where responses are being tracked
-    const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1-X5bHu5OJGfyzY9_2ocEiS36SVTrE0qva4DM5xGroqU/edit?gid=2126108334#gid=2126108334";
+    const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/u/0/d/1IfpjJRhUg1XunzksBxCVFABIb3grrWtEiK7jo4Y3wS0/htmlview#gid=1887883140";
 
     // Web csv so we can view the filtered table in-browser
-    const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1-X5bHu5OJGfyzY9_2ocEiS36SVTrE0qva4DM5xGroqU/gviz/tq?tqx=out:csv&sheet=Form%20Responses%201"; // paste CSV URL here to enable table mode
+    const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1IfpjJRhUg1XunzksBxCVFABIb3grrWtEiK7jo4Y3wS0/gviz/tq?tqx=out:csv&sheet=Form%20Responses%201"; // paste CSV URL here to enable table mode
 
     const UNIT_ID_HEADER = "Unit ID (AUTOFILLED DO NOT EDIT)";
 
     // Validate the unit ID
     const KNOWN_UNITS = [
-      "CAC-1","CAC-2","AHU-16", "AHU-20","AHU-18", "AHU-2", "AHU-17","AHU-15","AHU-6B","AHU-14","AHU-6A","AHU-7C",
-      "AHU-1A","AHU-5A","AHU-10B","AHU-8B", "AHU-3A", "AHU-3B", "AHU-1B", "AHU-5B", "AHU-6C", 
-      "AHU-9A", "AHU-9B", "AHU-11A", "AHU-11B", "AHU-12", "AHU-13", "AHU-10A", "AHU-8A", "AHU-7A", 
-      "AHU-7B", "AHU-4A", "AHU-4B", "AHU-4C", "AHU-4D", "CAC-4", "CAC-3", "FCU-5", "FCU-6", "FCU-1",
-      "FCU-3", "FCU-4", "FCU-2", "AHU-19", 
+    "AHU-1","AHU-4A","AHU-4B","AHU-4C","AHU-5A","AHU-7A","AHU-7B",
+    "AHU-151E","AHU-151D","AHU-151C","AHU-6D","AHU-6E","AHU-8B","CRAC8A",
+    "AHU-9","AHU-10","AHU-11","AHU-12","AHU-15A","AHU-15B","AHU-15C",
+    "AHU-152D","AHU-152E","AHU-152H","AHU-152G","AHU-152F","AHU-3",
+    "AHU-UPS-1B1","AHU-UPS-1B2","AHU-UPS-1A2","AHU-UPS-1A1"
+  ];
 
-      //Outside units
-      "CU-3A", "CU-3B", "CU-1B", "CU-1A", "CU-2", "CU-5A", "CU-5B", "CU-6A", "CU-6B", "CU-6C",
-      "CU-9A", "CU-9B", "CU-11A", "CU-11B", "CU-14", "CU-15", "CU-16", "CU-12", "CU-13", "CU-10A",
-      "CU-10B", "CU-8A", "CU-8B", "CU-7A", "CU-7B", "CU-7C", "CU-4A", "CU-4B", "CU-4C", "CU-4D",
-      "ACC-4", "ACC-3", "ACC-2", "ACC-1", "HP-5", "HP-6", "HP-1", "HP-3", "HP-4", "HP-2"
-    ];
     const isValidUnit = id => KNOWN_UNITS.includes(id);
 
     const unitChip = document.getElementById('unitChip');
@@ -170,6 +165,7 @@
   </script>
 </body>
 </html>
+
 
 
 
