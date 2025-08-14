@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Unit History</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{
+      --vz-red:#E4002B; --vz-black:#000000; --vz-tan:#F5F1E6;
+      --ink-1:#0B0B0B; --ink-2:#3A3A3A; --ink-muted:#6B7280;
+      --card:#FFFFFF; --border:#E5E7EB;
+    }
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--vz-tan);color:var(--ink-1)}
+    header{background:var(--vz-black);color:#fff;padding:24px 16px;border-bottom:4px solid var(--vz-red)}
+    .wrap{max-width:1100px;margin:0 auto;padding:24px 16px}
+    h1{margin:0;font-size:1.6rem}
+    .chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;color:var(--ink-2);font-weight:600}
+    .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:12px}
+    .btn{display:inline-block;padding:10px 14px;border-radius:10px;background:var(--vz-red);color:#fff;text-decoration:none;font-weight:700;border:2px solid var(--vz-red)}
+    .btn.ghost{background:transparent;color:var(--vz-red)}
+    .card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:16px;box-shadow:0 1px 0 rgba(0,0,0,.04)}
+    table{width:100%;border-collapse:separate;border-spacing:0;margin-top:8px}
+    th,td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left}
+    th{background:#FAFAFA;font-weight:700}
+    tr:hover td{background:#FFF8F9}
+    .muted{color:var(--ink-muted)}
+    .notice{margin-top:10px;color:#B91C1C;font-weight:600}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Unit History</h1>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="controls">
+      <span id="unitChip" class="chip" hidden><span style="width:8px;height:8px;border-radius:50%;background:var(--vz-red)"></span><span id="unitLabel"></span></span>
+      <a id="backLink" class="btn ghost" href="#">← Back</a>
+      <a id="sheetLink" class="btn" href="#" target="_blank" rel="noopener">Open in Google Sheets</a>
+    </div>
+
+    <section class="card">
+      <div class="muted" id="modeNote">Showing quick link to Google Sheets.</div>
+      <div id="tableWrap" style="overflow:auto;margin-top:8px"></div>
+      <div id="warn" class="notice" hidden>Missing or unknown unit ID.</div>
+    </section>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const unitId = (params.get('id') || '').trim();
+
+    // Link to the sheet where responses are being tracked
+    const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1-X5bHu5OJGfyzY9_2ocEiS36SVTrE0qva4DM5xGroqU/edit?gid=2126108334#gid=2126108334";
+
+    // Web csv so we can view the filtered table in-browser
+    const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1-X5bHu5OJGfyzY9_2ocEiS36SVTrE0qva4DM5xGroqU/gviz/tq?tqx=out:csv&sheet=Form%20Responses%201"; // paste CSV URL here to enable table mode
+
+    const UNIT_ID_HEADER = "Unit ID (AUTOFILLED DO NOT EDIT)";
+
+    // Validate the unit ID
+    const KNOWN_UNITS = [
+      "CAC-1","CAC-2","AHU-16", "AHU-20","AHU-18", "AHU-2", "AHU-17","AHU-15","AHU-6B","AHU-14","AHU-6A","AHU-7C",
+      "AHU-1A","AHU-5A","AHU-10B","AHU-8B", "AHU-3A", "AHU-3B", "AHU-1B", "AHU-5B", "AHU-6C", 
+      "AHU-9A", "AHU-9B", "AHU-11A", "AHU-11B", "AHU-12", "AHU-13", "AHU-10A", "AHU-8A", "AHU-7A", 
+      "AHU-7B", "AHU-4A", "AHU-4B", "AHU-4C", "AHU-4D", "CAC-4", "CAC-3", "FCU-5", "FCU-6", "FCU-1",
+      "FCU-3", "FCU-4", "FCU-2", "AHU-19", 
+
+      //Outside units
+      "CU-3A", "CU-3B", "CU-1B", "CU-1A", "CU-2", "CU-5A", "CU-5B", "CU-6A", "CU-6B", "CU-6C",
+      "CU-9A", "CU-9B", "CU-11A", "CU-11B", "CU-14", "CU-15", "CU-16", "CU-12", "CU-13", "CU-10A",
+      "CU-10B", "CU-8A", "CU-8B", "CU-7A", "CU-7B", "CU-7C", "CU-4A", "CU-4B", "CU-4C", "CU-4D",
+      "ACC-4", "ACC-3", "ACC-2", "ACC-1", "HP-5", "HP-6", "HP-1", "HP-3", "HP-4", "HP-2"
+    ];
+    const isValidUnit = id => KNOWN_UNITS.includes(id);
+
+    const unitChip = document.getElementById('unitChip');
+    const unitLabel = document.getElementById('unitLabel');
+    const backLink = document.getElementById('backLink');
+    const sheetLink = document.getElementById('sheetLink');
+    const tableWrap = document.getElementById('tableWrap');
+    const warn = document.getElementById('warn');
+    const modeNote = document.getElementById('modeNote');
+
+    // Build “Back” link to index with same id
+    backLink.href = `${location.origin}${location.pathname.replace(/history\.html?$/,'')}index.html?id=${encodeURIComponent(unitId)}`;
+
+    if (!unitId || !isValidUnit(unitId)) {
+      warn.hidden = false;
+    } else {
+      unitLabel.textContent = `Unit: ${unitId}`;
+      unitChip.hidden = false;
+    }
+
+    // Always provide a direct sheet link (filter manually or with filter views)
+    sheetLink.href = GOOGLE_SHEET_URL;
+
+    if (!SHEET_CSV_URL) {
+      modeNote.textContent = "Quick link: open the shared Google Sheet to filter by this Unit ID.";
+    } else {
+      // Fetch the csv and show the filtered results
+      modeNote.textContent = "Showing history from the published sheet (filtered to this Unit ID).";
+      fetch(SHEET_CSV_URL, {cache: "no-store"})
+        .then(r => r.text())
+        .then(text => {
+          const rows = parseCSV(text);
+          if (!rows.length) { tableWrap.innerHTML = "<p class='muted'>No data.</p>"; return; }
+
+          const headers = rows[0];
+          const idIdx = headers.indexOf(UNIT_ID_HEADER);
+          if (idIdx === -1) {
+            tableWrap.innerHTML = `<p class='notice'>Could not find a “${UNIT_ID_HEADER}” column in the CSV.</p>`;
+            return;
+          }
+
+          const dataRows = rows.slice(1).filter(r => (r[idIdx] || "").trim() === unitId);
+
+          if (!dataRows.length) {
+            tableWrap.innerHTML = "<p class='muted'>No rows for this unit yet.</p>";
+            return;
+          }
+
+          const table = document.createElement('table');
+          const thead = document.createElement('thead');
+          const trh = document.createElement('tr');
+          headers.forEach(h => {
+            const th = document.createElement('th'); th.textContent = h; trh.appendChild(th);
+          });
+          thead.appendChild(trh);
+          table.appendChild(thead);
+
+          const tbody = document.createElement('tbody');
+          dataRows.forEach(r => {
+            const tr = document.createElement('tr');
+            r.forEach((cell,i) => {
+              const td = document.createElement('td'); td.textContent = cell ?? ""; tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+          });
+          table.appendChild(tbody);
+          tableWrap.innerHTML = "";
+          tableWrap.appendChild(table);
+        })
+        .catch(err => {
+          tableWrap.innerHTML = `<p class='notice'>Error loading CSV: ${err}</p>`;
+        });
+    }
+
+    // Parse the csv
+    function parseCSV(text){
+      const lines = text.replace(/\r\n/g,"\n").split("\n").filter(x=>x.length);
+      const rows = [];
+      for (const line of lines){
+        const row = [];
+        let cur = "", inQ = false;
+        for (let i=0;i<line.length;i++){
+          const ch = line[i], nx = line[i+1];
+          if (ch === '"' && nx === '"'){ cur+='"'; i++; continue; }
+          if (ch === '"'){ inQ = !inQ; continue; }
+          if (ch === ',' && !inQ){ row.push(cur); cur=""; continue; }
+          cur += ch;
+        }
+        row.push(cur);
+        rows.push(row);
+      }
+      return rows;
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+

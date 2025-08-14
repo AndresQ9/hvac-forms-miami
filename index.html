@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>HVAC Service</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{
+      --vz-red:#E4002B;     /* Verizon red */
+      --vz-black:#000000;
+      --vz-tan:#F5F1E6;     /* soft tan background */
+      --ink-1:#0B0B0B;
+      --ink-2:#3A3A3A;
+      --ink-muted:#6B7280;
+      --card:#FFFFFF;
+      --border:#E5E7EB;
+    }
+    .error {
+      display:none; margin-top:14px; padding:12px 14px; border-radius:10px;
+      background:#FEE2E2; border:1px solid #FCA5A5; color:#7F1D1D; font-weight:600;
+    }
+    .error.show { display:block; }
+    .btn[aria-disabled="true"] {
+       opacity:.45; cursor:not-allowed; pointer-events:none; /* truly blocks clicks */
+    }
+  .shake { animation: shake .3s linear 1; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--vz-tan); color: var(--ink-1);
+    }
+    .wrap{max-width:960px;margin:0 auto;padding:32px 16px}
+    header{
+      background: var(--vz-black); color:white; padding:28px 16px; border-bottom:4px solid var(--vz-red);
+    }
+    header .title{max-width:960px;margin:0 auto;display:flex;align-items:center;gap:12px}
+    .dot{width:14px;height:14px;border-radius:50%;background:var(--vz-red)}
+    h1{font-size:1.75rem;margin:0}
+    .subtle{color:var(--ink-2)}
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border:1px solid var(--border);border-radius:999px;
+      background:#fff; color:var(--ink-2); font-weight:600;
+    }
+    main{margin-top:28px}
+    .grid{
+      display:grid; gap:16px; grid-template-columns:1fr; margin-top:16px;
+    }
+    @media(min-width:700px){ .grid{ grid-template-columns:1fr 1fr; } }
+    .card{
+      background: var(--card); border:1px solid var(--border); border-radius:14px; padding:18px;
+      box-shadow: 0 1px 0 rgba(0,0,0,.04);
+    }
+    .card h2{margin:.25rem 0 .5rem; font-size:1.15rem}
+    .btn{
+      display:inline-block; margin-top:12px; padding:12px 16px; border-radius:10px;
+      background: var(--vz-red); color:white; text-decoration:none; font-weight:700;
+      border:2px solid var(--vz-red);
+    }
+    .btn.outline{
+      background:transparent; color: var(--vz-red);
+    }
+    .notice{
+      margin-top:14px; color:#B91C1C; font-weight:600;
+    }
+    footer{margin:40px 0 24px; color:var(--ink-muted); font-size:.9rem}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>HVAC Service</h1>
+    <div id="unitChip" class="id-chip" hidden></div>
+    <p class="subtle">Choose what you need for this specific unit.</p>
+
+    <div class="cards">
+      <div class="card">
+        <h2>Forms</h2>
+        <p class="subtle">Open the service form pre-filled with this unit’s ID.</p>
+        <a id="formLink" class="btn" href="#" target="_blank" rel="noopener">Open Service Form</a>
+      </div>
+      <div class="card">
+        <h2>History</h2>
+        <p class="subtle">View this unit’s service history and past submissions.</p>
+        <a id="historyLink" class="btn" href="#" target="_blank" rel="noopener">View History</a>
+      </div>
+    </div>
+
+    <div id="errorBanner" class="error" role="alert" aria-live="assertive">
+    Missing or unknown Unit ID. Please scan the correct QR code.
+    </div>
+
+  </div>
+
+   <script>
+    // Read unit_id from URL (?id=...)
+    const params = new URLSearchParams(location.search);
+    const unitId = (params.get('id') || '').trim();
+  
+    const KNOWN_UNITS = [
+      "CAC-1","CAC-2","AHU-16", "AHU-20","AHU-18", "AHU-2", "AHU-17","AHU-15","AHU-6B","AHU-14","AHU-6A","AHU-7C",
+      "AHU-1A","AHU-5A","AHU-10B","AHU-8B", "AHU-3A", "AHU-3B", "AHU-1B", "AHU-5B", "AHU-6C", 
+      "AHU-9A", "AHU-9B", "AHU-11A", "AHU-11B", "AHU-12", "AHU-13", "AHU-10A", "AHU-8A", "AHU-7A", 
+      "AHU-7B", "AHU-4A", "AHU-4B", "AHU-4C", "AHU-4D", "CAC-4", "CAC-3", "FCU-5", "FCU-6", "FCU-1",
+      "FCU-3", "FCU-4", "FCU-2", "AHU-19", "AHU 16",
+
+      //Outside units
+      "CU-3A", "CU-3B", "CU-1B", "CU-1A", "CU-2", "CU-5A", "CU-5B", "CU-6A", "CU-6B", "CU-6C",
+      "CU-9A", "CU-9B", "CU-11A", "CU-11B", "CU-14", "CU-15", "CU-16", "CU-12", "CU-13", "CU-10A",
+      "CU-10B", "CU-8A", "CU-8B", "CU-7A", "CU-7B", "CU-7C", "CU-4A", "CU-4B", "CU-4C", "CU-4D",
+      "ACC-4", "ACC-3", "ACC-2", "ACC-1", "HP-5", "HP-6", "HP-1", "HP-3", "HP-4", "HP-2"
+    ];
+    const isValidUnit = id => KNOWN_UNITS.includes(id);
+  
+    const unitChip    = document.getElementById('unitChip');
+    const formLink    = document.getElementById('formLink');
+    const historyLink = document.getElementById('historyLink');
+    const errorBanner = document.getElementById('errorBanner');
+  
+    function showError() {
+      errorBanner.classList.add('show','shake');
+      setTimeout(()=>errorBanner.classList.remove('shake'), 350);
+      errorBanner.scrollIntoView({behavior:'smooth', block:'center'});
+    }
+  
+    // If missing/invalid id, disable buttons and show error
+    if (!unitId || !isValidUnit(unitId)) {
+      [formLink, historyLink].forEach(a => {
+        a.setAttribute('aria-disabled','true');
+        a.setAttribute('tabindex','-1');
+        a.href = '#';
+        a.addEventListener('click', (e) => { e.preventDefault(); showError(); });
+        a.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showError(); }
+        });
+      });
+      showError();
+    } else {
+      // Happy path: show chip and wire links
+      unitChip.textContent = `Unit: ${unitId}`;
+      unitChip.hidden = false;
+  
+      const googleFormBase = "https://docs.google.com/forms/d/e/1FAIpQLSdH5Ix8iNe3ZUc60hm5OjD-Q_Kpzb5WsFMKB7hg0Pf9qBIubA/viewform";
+      const unitEntryKey   = "entry.2099728163";
+      const formUrl        = `${googleFormBase}?usp=pp_url&${unitEntryKey}=${encodeURIComponent(unitId)}`;
+  
+      const historyUrl     = `${location.origin}${location.pathname.replace(/index\.html?$/,'')}history.html?id=${encodeURIComponent(unitId)}`;
+  
+      formLink.href = formUrl;
+      historyLink.href = historyUrl;
+  
+      // remove attributes to stay in same tab
+      // formLink.removeAttribute('target');
+      historyLink.removeAttribute('target');
+    }
+  </script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
